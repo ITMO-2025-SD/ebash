@@ -6,14 +6,14 @@ from ebash_lib.common.parser import PrefixParser, SimpleParser, SplittingParser
 
 
 def test_simple_parser():
-    parser = SimpleParser(CommandRunner)
+    parser = SimpleParser[MetaCommand](CommandRunner)
     assert parser.parse_string("bash -c pain") == CommandRunner(["bash", "-c", "pain"])
     assert parser.parse_string("bash -c 'long command'") == CommandRunner(["bash", "-c", "long command"])
     assert parser.parse_string("") is None
 
 
 def test_splitting():
-    parser = SimpleParser(CommandRunner).chain(SplittingParser, Pipe, "|")
+    parser = SimpleParser[MetaCommand](CommandRunner).chain(SplittingParser, Pipe, "|")
     assert parser.parse_string("bash -c pain") == CommandRunner(["bash", "-c", "pain"])
     assert parser.parse_string("cat | echo") == Pipe([CommandRunner(["cat"]), CommandRunner(["echo"])])
     assert parser.parse_string("echo 'a | b' | echo") == Pipe(
@@ -44,14 +44,16 @@ def test_setenv():
         def __eq__(self, value: object, /) -> bool:
             return isinstance(value, WithNumbers) and value.command == self.command and value.results == self.results
 
-    parser = SimpleParser(CommandRunner).chain(PrefixParser[int], WithNumbers, check_string)
+    parser = SimpleParser[MetaCommand](CommandRunner).chain(PrefixParser, WithNumbers, check_string)
     assert parser.parse_string("bash -c pain") == CommandRunner(["bash", "-c", "pain"])
     assert parser.parse_string("1 2 345 bash") == WithNumbers(CommandRunner(["bash"]), [1, 2, 345])
     assert parser.parse_string("1 2 345 6") is None
 
 
 def test_priority():
-    parser = SimpleParser(CommandRunner).chain(SplittingParser, Pipe, "|").chain(SplittingParser, Pipe, "&")
+    parser = (
+        SimpleParser[MetaCommand](CommandRunner).chain(SplittingParser, Pipe, "|").chain(SplittingParser, Pipe, "&")
+    )
     # (a | b) & c
     assert parser.parse_string("a | b & c") == Pipe(
         [Pipe([CommandRunner(["a"]), CommandRunner(["b"])]), CommandRunner(["c"])]

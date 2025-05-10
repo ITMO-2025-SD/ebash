@@ -2,12 +2,10 @@ import abc
 import shlex
 from typing import Callable, Concatenate, Self, final, override
 
-from ebash_lib.common.command import MetaCommand
 
-
-class Parser(abc.ABC):
+class Parser[M](abc.ABC):
     @abc.abstractmethod
-    def parse(self, tokens: list[str]) -> MetaCommand | None:
+    def parse(self, tokens: list[str]) -> M | None:
         """Receives a list of tokens, should return a command, or None if the syntax is invalid."""
 
     def parse_string(self, data: str):
@@ -32,33 +30,33 @@ def split_list[T](value: T, lst: list[T]) -> list[list[T]]:
 
 
 @final
-class SimpleParser[T: MetaCommand](Parser):
-    def __init__(self, constructor: Callable[[list[str]], T]) -> None:
+class SimpleParser[M](Parser[M]):
+    def __init__(self, constructor: Callable[[list[str]], M]) -> None:
         super().__init__()
         self.constructor = constructor
 
     @override
-    def parse(self, tokens: list[str]) -> MetaCommand | None:
+    def parse(self, tokens: list[str]) -> M | None:
         if not tokens:
             return None
         return self.constructor(tokens)
 
 
 @final
-class SplittingParser(Parser):
-    def __init__(self, parser: Parser, constructor: Callable[[list[MetaCommand]], MetaCommand], split_by: str) -> None:
+class SplittingParser[M](Parser[M]):
+    def __init__(self, parser: Parser[M], constructor: Callable[[list[M]], M], split_by: str) -> None:
         super().__init__()
         self.constructor = constructor
         self.subparser = parser
         self.split_by = split_by
 
     @override
-    def parse(self, tokens: list[str]) -> MetaCommand | None:
+    def parse(self, tokens: list[str]) -> M | None:
         tokens_split = split_list(self.split_by, tokens)
         if len(tokens_split) <= 1:
             return self.subparser.parse(tokens)
 
-        results: list[MetaCommand] = []
+        results: list[M] = []
         for block in tokens_split:
             if result := self.subparser.parse(block):
                 results.append(result)
@@ -68,11 +66,11 @@ class SplittingParser(Parser):
 
 
 @final
-class PrefixParser[T](Parser):
+class PrefixParser[T, M](Parser[M]):
     def __init__(
         self,
-        parser: Parser,
-        constructor: Callable[[MetaCommand, list[T]], MetaCommand],
+        parser: Parser[M],
+        constructor: Callable[[M, list[T]], M],
         prefix_checker: Callable[[str], T | None],
     ) -> None:
         super().__init__()
@@ -81,7 +79,7 @@ class PrefixParser[T](Parser):
         self.checker = prefix_checker
 
     @override
-    def parse(self, tokens: list[str]) -> MetaCommand | None:
+    def parse(self, tokens: list[str]) -> M | None:
         prefix: list[T] = []
         for i, tok in enumerate(tokens):
             if (result := self.checker(tok)) is not None:
