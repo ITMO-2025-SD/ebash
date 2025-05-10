@@ -1,0 +1,19 @@
+[project]
+name = "ebash"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = []
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+exclude = ["outdated", ".venv"]
+
+[tool.pyright]
+pythonVersion = "3.12"
+exclude = ["outdated", ".venv"]
+
+[dependency-groups]
+dev = ["basedpyright>=1.29.1", "pytest>=8.3.5", "ruff>=0.11.9"]
