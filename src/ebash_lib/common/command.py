@@ -93,7 +93,7 @@ def grep(args: list[str], ctx: Context):
             with open(args[1], "r") as file:
                 for line in file:
                     if args[0] in line:
-                        out.append(line.strip())
+                        out.append(line)
             return ctx.with_stdout(out)
         except FileNotFoundError:
             return ctx.with_error(1, f"Error: File '{args[1]}' not found.")
