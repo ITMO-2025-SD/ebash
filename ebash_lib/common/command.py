@@ -41,7 +41,7 @@ class CommandRunner(MetaCommand):
 
 @CommandRunner.register
 def echo(args: list[str], ctx: Context):
-    return Context(0, ctx.workdir, [" ".join(args)], ctx.stderr)
+    return ctx.with_stdout([" ".join(args)])
 
 
 @CommandRunner.register
@@ -51,7 +51,7 @@ def cat(args: list[str], ctx: Context):
     else:
         try:
             with open(args[0], "r") as file:
-                return Context(0, ctx.workdir, file.readlines(), ctx.stderr)
+                return ctx.with_stdout([x.strip() for x in file.readlines()])
         except FileNotFoundError:
             return ctx.with_error(1, f"Error: File '{args[0]}' not found.")
 
@@ -68,14 +68,14 @@ def wc(args: list[str], ctx: Context):
                 words = content.split()
                 chars = len(content)
                 output = f"{len(lines)}\t{len(words)}\t{chars}\t{args[0]}"
-                return Context(ctx.return_code, ctx.workdir, [output], ctx.stderr)
+                return ctx.with_stdout([output])
         except FileNotFoundError:
             return ctx.with_error(1, f"Error: File '{args[0]}' not found.")
 
 
 @CommandRunner.register
 def pwd(_args: list[str], ctx: Context):
-    return Context(0, ctx.workdir, [ctx.workdir], ctx.stderr)
+    return ctx.with_stdout([ctx.workdir])
 
 
 @CommandRunner.register
@@ -94,7 +94,7 @@ def grep(args: list[str], ctx: Context):
                 for line in file:
                     if args[0] in line:
                         print(line.strip())
-            return Context(0, ctx.workdir, out, ctx.stderr)
+            return ctx.with_stdout(out)
         except FileNotFoundError:
             return ctx.with_error(1, f"Error: File '{args[1]}' not found.")
 
