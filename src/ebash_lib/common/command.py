@@ -51,7 +51,7 @@ def cat(args: list[str], ctx: Context):
     else:
         try:
             with open(args[0], "r") as file:
-                return ctx.with_stdout([x.strip() for x in file.readlines()])
+                return ctx.with_stdout([x.rstrip() for x in file.readlines()])
         except FileNotFoundError:
             return ctx.with_error(1, f"Error: File '{args[0]}' not found.")
 
@@ -93,7 +93,7 @@ def grep(args: list[str], ctx: Context):
             with open(args[1], "r") as file:
                 for line in file:
                     if args[0] in line:
-                        print(line.strip())
+                        out.append(line)
             return ctx.with_stdout(out)
         except FileNotFoundError:
             return ctx.with_error(1, f"Error: File '{args[1]}' not found.")
