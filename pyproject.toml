@@ -27,3 +27,7 @@ exclude = ["outdated", ".venv"]
 
 [dependency-groups]
 dev = ["basedpyright>=1.29.1", "pytest>=8.3.5", "ruff>=0.11.9"]
+
+[tool.pytest.ini_options]
+testpaths = ["src/tests"]
+pythonpath = ["src"]
