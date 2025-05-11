@@ -1,7 +1,7 @@
 import os
 
-from src.ebash_lib.bash_core import BashLoop
-from src.ebash_lib.bash_parser import BashParser
+from ebash_lib.bash_core import BashLoop
+from ebash_lib.bash_parser import BashParser
 
 
 def main():

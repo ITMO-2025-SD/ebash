@@ -93,7 +93,7 @@ def grep(args: list[str], ctx: Context):
             with open(args[1], "r") as file:
                 for line in file:
                     if args[0] in line:
-                        print(line.strip())
+                        out.append(line.strip())
             return ctx.with_stdout(out)
         except FileNotFoundError:
             return ctx.with_error(1, f"Error: File '{args[1]}' not found.")
@@ -106,7 +106,12 @@ class Pipe(MetaCommand):
 
     @override
     def __call__(self, ctx: Context) -> Context:
-        raise NotImplementedError("Pipe")
+        current_ctx = ctx
+        for command in self.chain:
+            current_ctx = command(current_ctx)
+            if current_ctx.return_code != 0:
+                return current_ctx
+        return current_ctx
 
     @override
     def __eq__(self, value: object, /) -> bool:

@@ -51,7 +51,10 @@ class BashLoop:
         return current_tokens
 
     def run_once(self, line: str) -> list[str]:
-        tokens = self.run_lexer(line)
+        if line == '\x18': # Введен Ctrl+X
+            tokens = self.run_lexer("exit")
+        else:
+            tokens = self.run_lexer(line)
         if tokens is None:
             return ["Unmatched quotes"]
         command = self.parser.parse(tokens)
