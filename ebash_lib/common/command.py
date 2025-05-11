@@ -119,8 +119,10 @@ class SetEnvData:
     value: str
 
     @classmethod
-    def parse(cls, _token: str) -> "SetEnvData | None":
-        raise NotImplementedError("SetEnvData")
+    def parse(cls, token: str) -> "SetEnvData | None":
+        if "=" in token:
+            return SetEnvData(*token.split("=", 1))
+        return None
 
 
 @final
@@ -131,7 +133,10 @@ class SetEnv(MetaCommand):
 
     @override
     def __call__(self, ctx: Context) -> Context:
-        raise NotImplementedError("SetEnv")
+        new_environ = dict(ctx.environ)
+        for var in self.env_vars:
+            new_environ[var.name] = var.value
+        return self.command(Context(ctx.return_code, ctx.workdir, new_environ, ctx.stdout, ctx.stderr))
 
     @override
     def __eq__(self, value: object, /) -> bool:
