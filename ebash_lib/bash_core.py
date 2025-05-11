@@ -70,4 +70,4 @@ class BashLoop:
 
     def run(self):
         while True:
-            print("\n".join(self.run_once(input())))
+            print("\n".join(self.run_once(input(f"[{self.cwd}]> "))))
