@@ -2,7 +2,8 @@ import abc
 import dataclasses
 from collections.abc import Iterable
 from typing import final, override
-
+import os
+import sys
 from ebash_lib.common.context import Context
 
 
@@ -11,14 +12,68 @@ class MetaCommand(abc.ABC):
     def __call__(self, ctx: Context) -> Context: ...
 
 
-@final
-class CommandRunner(MetaCommand):
+
+
+class CommandRunner:
     def __init__(self, args: list[str]):
         self.args = args
 
     @override
-    def __call__(self, ctx: Context) -> Context:
-        raise NotImplementedError("CommandRunner")
+    def __call__(self, ctx: dict) -> dict:
+        if not self.args:
+            return ctx
+
+        command = self.args[0]
+
+        if command == "echo":
+            print(" ".join(self.args[1:]))
+
+        elif command == "cat":
+            if len(self.args) < 2:
+                print("Usage: cat <file>")
+            else:
+                try:
+                    with open(self.args[1], 'r') as file:
+                        print(file.read())
+                except FileNotFoundError:
+                    print(f"Error: File '{self.args[1]}' not found.")
+
+        elif command == "wc":
+            if len(self.args) < 2:
+                print("Usage: wc <file>")
+            else:
+                try:
+                    with open(self.args[1], 'r') as file:
+                        content = file.read()
+                        lines = content.split('\n')
+                        words = content.split()
+                        chars = len(content)
+                        print(f"{len(lines)} {len(words)} {chars} {self.args[1]}")
+                except FileNotFoundError:
+                    print(f"Error: File '{self.args[1]}' not found.")
+
+        elif command == "pwd":
+            print(os.getcwd())
+
+        elif command == "exit":
+            sys.exit(0)
+
+        elif command == "grep":
+            if len(self.args) < 3:
+                print("Usage: grep <pattern> <file>")
+            else:
+                try:
+                    with open(self.args[2], 'r') as file:
+                        for line in file:
+                            if self.args[1] in line:
+                                print(line.strip())
+                except FileNotFoundError:
+                    print(f"Error: File '{self.args[2]}' not found.")
+
+        else:
+            raise NotImplementedError(f"Command '{command}' not supported.")
+
+        return ctx
 
     @override
     def __eq__(self, value: object, /) -> bool:
