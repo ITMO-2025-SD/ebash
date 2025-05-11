@@ -8,9 +8,8 @@ on:
 
 env:
   IMAGE_NAME: ebash
-  REGISTRY: ghcr.io  # GitHub Container Registry
+  REGISTRY: ghcr.io
   VERSION: latest
-  REPO_OWNER: itmo-2025-sd
 
 jobs:
   build-and-test:
@@ -30,29 +29,22 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Build Docker image
+    - name: Convert owner to lowercase
+      id: lowercase
+      run: |
+        OWNER_LOWERCASE=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+        echo "owner_lowercase=${OWNER_LOWERCASE}" >> $GITHUB_OUTPUT
+
+    - name: Build and push Docker image
       uses: docker/build-push-action@v4
       with:
         context: .
         file: ./Dockerfile
         tags: |
-          ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ env.VERSION }}
-          ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          ${{ env.REGISTRY }}/${{ steps.lowercase.outputs.owner_lowercase }}/${{ env.IMAGE_NAME }}:${{ env.VERSION }}
+          ${{ env.REGISTRY }}/${{ steps.lowercase.outputs.owner_lowercase }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
         push: ${{ github.event_name == 'push' }}
 
     - name: Run tests
       run: |
-        docker run --rm ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ env.VERSION }} pytest src/tests/
-
-  deploy:
-    needs: build-and-test
-    if: github.event_name == 'push'
-    runs-on: ubuntu-latest
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Deploy notification
-      run: |
-        echo "Deployment would happen here"
+        docker run --rm ${{ env.REGISTRY }}/${{ steps.lowercase.outputs.owner_lowercase }}/${{ env.IMAGE_NAME }}:${{ env.VERSION }} pytest src/tests/
