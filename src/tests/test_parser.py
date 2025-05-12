@@ -32,7 +32,7 @@ def test_setenv():
 
     @final
     class WithNumbers(MetaCommand):
-        def __init__(self, command: MetaCommand, results: list[int]):
+        def __init__(self, command: MetaCommand | None, results: list[int]):
             self.command = command
             self.results = results
 
@@ -46,8 +46,8 @@ def test_setenv():
 
     parser = SimpleParser[MetaCommand](CommandRunner).chain(PrefixParser, WithNumbers, check_string)
     assert parser.parse_string("bash -c pain") == CommandRunner(["bash", "-c", "pain"])
-    assert parser.parse_string("1 2 345 bash") == WithNumbers(CommandRunner(["bash"]), [1, 2, 345])
-    assert parser.parse_string("1 2 345 6") is None
+    assert parser.parse_string("1 2 345 bash stuff") == WithNumbers(CommandRunner(["bash", "stuff"]), [1, 2, 345])
+    assert parser.parse_string("1 2 345 6") == WithNumbers(None, [1, 2, 345, 6])
 
 
 def test_priority():
