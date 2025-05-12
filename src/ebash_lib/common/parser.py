@@ -70,7 +70,7 @@ class PrefixParser[T, M](Parser[M]):
     def __init__(
         self,
         parser: Parser[M],
-        constructor: Callable[[M, list[T]], M],
+        constructor: Callable[[M | None, list[T]], M],
         prefix_checker: Callable[[str], T | None],
     ) -> None:
         super().__init__()
@@ -87,9 +87,9 @@ class PrefixParser[T, M](Parser[M]):
             else:
                 break
         else:  # Break was never called
-            return None
+            return self.constructor(None, prefix)
 
         result = self.subparser.parse(tokens[i:])
-        if prefix and result:
+        if result and prefix:
             result = self.constructor(result, prefix)
         return result

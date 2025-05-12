@@ -132,7 +132,7 @@ class SetEnvData:
 
 @final
 class SetEnv(MetaCommand):
-    def __init__(self, command: MetaCommand, env_vars: list[SetEnvData]):
+    def __init__(self, command: MetaCommand | None, env_vars: list[SetEnvData]):
         self.command = command
         self.env_vars = env_vars
 
@@ -141,7 +141,11 @@ class SetEnv(MetaCommand):
         new_environ = dict(ctx.environ)
         for var in self.env_vars:
             new_environ[var.name] = var.value
-        return self.command(Context(ctx.return_code, ctx.workdir, new_environ, ctx.stdout, ctx.stderr))
+        new_ctx = ctx.with_environ(new_environ)
+        if not self.command:
+            return new_ctx
+        new_ctx2 = self.command(new_ctx)
+        return new_ctx2.with_environ(ctx.environ)
 
     @override
     def __eq__(self, value: object, /) -> bool:
