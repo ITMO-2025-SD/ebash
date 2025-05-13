@@ -47,7 +47,7 @@ class CommandRunner(MetaCommand):
                 if result.stderr:
                     return ctx.with_error(result.returncode, result.stderr)
                 elif result.stdout:
-                    return ctx.with_stdout([result.stdout])
+                    return ctx.with_stdout((result.stdout).split("\n"))
                 else:
                     return ctx
                 
