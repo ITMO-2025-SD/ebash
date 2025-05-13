@@ -1,6 +1,8 @@
 import abc
 import dataclasses
 import sys
+import subprocess
+from pathlib import Path
 from collections.abc import Iterable
 from typing import Callable, ClassVar, final, override
 
@@ -32,7 +34,24 @@ class CommandRunner(MetaCommand):
         if command in self.registered_commands:
             return self.registered_commands[command](self.args[1:], ctx)
         else:
-            raise NotImplementedError(f"Command '{command}' not supported.")
+            pathContent = ctx.environ["PATH"].split(":")
+            binaryName = None
+            for path in pathContent:
+                fileName = Path(f"{path}/{command}")
+                if fileName.is_file():
+                    binaryName = fileName
+                    break
+
+            if binaryName:
+                result = subprocess.run([binaryName, *self.args[1:]], capture_output=True, text=True)
+                if result.stderr:
+                    return ctx.with_error(result.returncode, result.stderr)
+                elif result.stdout:
+                    return ctx.with_stdout([result.stdout])
+                else:
+                    return ctx
+                
+            return ctx.with_stdout([f"Command '{command}' not found"])
 
     @override
     def __eq__(self, value: object, /) -> bool:
