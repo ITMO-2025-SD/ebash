@@ -18,3 +18,6 @@ class Context:
 
     def with_stdout(self, data: list[str]):
         return Context(self.return_code, self.workdir, self.environ, data, self.stderr)
+
+    def with_dir(self, workdir: str):
+        return Context(self.return_code, workdir, self.environ, self.stdout, self.stderr)
