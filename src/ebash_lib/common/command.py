@@ -1,5 +1,6 @@
 import abc
 import dataclasses
+import os
 import sys
 import subprocess
 import re
@@ -101,6 +102,44 @@ def pwd(_args: list[str], ctx: Context):
 @CommandRunner.register
 def exit(_args: list[str], _ctx: Context):
     sys.exit(0)
+
+
+@CommandRunner.register
+def cd(args: list[str], ctx: Context):
+    if len(args) > 1:
+        return ctx.with_error(2, "Usage: cd <path>")
+    elif len(args) == 0:
+        return ctx.with_dir(os.path.expanduser("~"))
+    else:
+        path = ctx.workdir
+        for elem in Path(args[0]).parts:
+            if elem == "..":
+                path = os.path.split(path)[0]
+            else:
+                path = os.path.join(path, elem)
+            if not os.path.exists(path):
+                return ctx.with_error(2, "Usage: cd <path>")
+        return ctx.with_dir(path)
+
+
+@CommandRunner.register
+def ls(args: list[str], ctx: Context):
+    paths = args if len(args) > 0 else [ctx.workdir]
+    result = []
+    for index, parsing_path in enumerate(paths):
+        pattern = "*"
+        path = ctx.workdir
+        for elem in Path(parsing_path).parts:
+            if set("*?[]") & set(elem) and index == len(paths) - 1:
+                pattern = elem
+            elif elem == "..":
+                path = os.path.split(path)[0]
+            else:
+                path = os.path.join(path, elem)
+            if not os.path.exists(path):
+                return ctx.with_error(2, "Usage: ls <options> <paths>")
+        result = result + [f.name for f in Path(path).glob(pattern)]
+    return ctx.with_stdout(result)
 
 
 @CommandRunner.register
