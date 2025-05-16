@@ -2,6 +2,7 @@ import abc
 import dataclasses
 import sys
 import subprocess
+import re
 from pathlib import Path
 from collections.abc import Iterable
 from typing import Callable, ClassVar, final, override
@@ -34,16 +35,16 @@ class CommandRunner(MetaCommand):
         if command in self.registered_commands:
             return self.registered_commands[command](self.args[1:], ctx)
         else:
-            pathContent = ctx.environ["PATH"].split(":")
-            binaryName = None
-            for path in pathContent:
+            path_content = ctx.environ["PATH"].split(":")
+            binary_name = None
+            for path in path_content:
                 fileName = Path(f"{path}/{command}")
                 if fileName.is_file():
-                    binaryName = fileName
+                    binary_name = fileName
                     break
 
-            if binaryName:
-                result = subprocess.run([binaryName, *self.args[1:]], capture_output=True, text=True)
+            if binary_name:
+                result = subprocess.run([binary_name, *self.args[1:]], capture_output=True, text=True)
                 if result.stderr:
                     return ctx.with_error(result.returncode, result.stderr)
                 elif result.stdout:
@@ -104,19 +105,101 @@ def exit(_args: list[str], _ctx: Context):
 
 @CommandRunner.register
 def grep(args: list[str], ctx: Context):
-    if len(args) < 2:
-        return ctx.with_error(2, "Usage: grep <pattern> <file>")
-    else:
-        out: list[str] = []
-        try:
-            with open(args[1], "r") as file:
-                for line in file:
-                    if args[0] in line:
-                        out.append(line)
-            return ctx.with_stdout(out)
-        except FileNotFoundError:
-            return ctx.with_error(1, f"Error: File '{args[1]}' not found.")
+    ignore_case = False
+    count = False
+    list_files = False
+    word = False
+    after_context = 0
+    i = 0
 
+    # Парсинг опций
+    while i < len(args) and args[i].startswith('-'):
+        opt = args[i]
+
+        if   opt == '-i': ignore_case = True; i += 1
+        elif opt == '-c': count       = True; i += 1
+        elif opt == '-l': list_files  = True; i += 1
+        elif opt == '-w': word        = True; i += 1
+        elif opt == '-A':
+            if i + 1 >= len(args):      return ctx.with_error(2, "Option -A requires a number")
+            if not args[i+1].isdigit(): return ctx.with_error(2, "Invalid number after -A")
+
+            after_context = int(args[i+1])
+            i += 2
+        else:
+            return ctx.with_error(2, f"Unknown option: {opt}")
+
+    # Проверка паттерна и файлов
+    if i >= len(args):
+        return ctx.with_error(2, "Usage: grep [options] <pattern> <file>...")
+
+    pattern = args[i]
+    files = args[i+1:]
+
+    if not files:
+        return ctx.with_error(2, "Missing file(s)")
+
+    # Компиляция регулярного выражения
+    regex = re.escape(pattern)
+    if word:
+        regex = rf'\b{regex}\b'
+    flags = re.IGNORECASE if ignore_case else 0
+
+    try:
+        regex = re.compile(regex, flags)
+    except re.error as e:
+        return ctx.with_error(2, f"Invalid pattern: {e}")
+
+    # Обработка файлов
+    out = []
+    multiple_files = len(files) > 1
+
+    for file in files:
+        try:
+            with open(file, 'r') as f:
+                lines = [line.rstrip('\n') for line in f.readlines()]
+        except FileNotFoundError:
+            ctx = ctx.with_error(1, f"Error: File '{file}' not found.")
+            continue
+
+        matches = [i for i, line in enumerate(lines) if regex.search(line)]
+
+        # Обработка флагов
+        if list_files:
+            if matches:
+                out.append(file)
+            continue
+
+        if count:
+            count_str = str(len(matches))
+            out.append(f"{file}:{count_str}" if multiple_files else count_str)
+            continue
+
+        # Обработка контекста
+        if after_context > 0:
+            groups = []
+
+            for m in matches:
+                start = m
+                end = min(m + after_context, len(lines) - 1)
+
+                if groups and start <= groups[-1][1]:
+                    prev_start, _ = groups[-1]
+                    groups[-1] = (prev_start, start - 1)
+                groups.append((start, end))
+
+            for start, end in groups:
+                indicator = ':'
+                for line_num in range(start, end + 1):
+                    prefix = f"{file}{indicator}" if multiple_files else ""
+                    out.append(f"{prefix}{lines[line_num]}")
+                    indicator = '-'
+        else:
+            for line_num in matches:
+                prefix = f"{file}:" if multiple_files else ""
+                out.append(f"{prefix}{lines[line_num]}")
+
+    return ctx.with_stdout(out)
 
 @final
 class Pipe(MetaCommand):
