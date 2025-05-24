@@ -10,6 +10,7 @@ def initial_context():
         workdir=str(Path.home()),
         environ={"PATH": "/usr/bin:/bin"},
         return_code=0,
+        stdout=[],
         stderr=""
     )
 

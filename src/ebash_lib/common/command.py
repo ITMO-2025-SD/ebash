@@ -138,7 +138,13 @@ def ls(args: list[str], ctx: Context):
                 path = os.path.join(path, elem)
             if not os.path.exists(path):
                 return ctx.with_error(2, "Usage: ls <options> <paths>")
-        result = result + [f.name for f in Path(path).glob("[!.]" + pattern)]
+
+        matched_files = [
+            f.name for f in Path(path).glob(pattern)
+            if not f.name.startswith('.')
+        ]
+        result.extend(matched_files)
+
     return ctx.with_stdout(result)
 
 
