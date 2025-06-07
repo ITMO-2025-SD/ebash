@@ -1,5 +1,6 @@
 from typing import final, override
 
+from ebash_lib.bash_parser import BashParser
 from ebash_lib.common.command import CommandRunner, MetaCommand, Pipe
 from ebash_lib.common.context import Context
 from ebash_lib.common.parser import PrefixParser, SimpleParser, SplittingParser
@@ -20,6 +21,11 @@ def test_splitting():
         [CommandRunner(["echo", "a | b"]), CommandRunner(["echo"])]
     )
     assert parser.parse_string("not | closed | pipe |") is None
+
+
+def test_splitting2():
+    parser = BashParser
+    assert parser.parse_string("cat .gitignore |") is None
 
 
 def test_setenv():

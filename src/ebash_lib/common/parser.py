@@ -87,7 +87,7 @@ class PrefixParser[T, M](Parser[M]):
             else:
                 break
         else:  # Break was never called
-            return self.constructor(None, prefix)
+            return self.constructor(None, prefix) if prefix else None
 
         result = self.subparser.parse(tokens[i:])
         if result and prefix:

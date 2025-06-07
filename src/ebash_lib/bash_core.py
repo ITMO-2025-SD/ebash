@@ -61,6 +61,8 @@ class BashLoop:
             tokens = self.run_lexer(line)
         if tokens is None:
             return ["Unmatched quotes"]
+        if not tokens:  # "empty command"
+            return []
         command = self.parser.parse(tokens)
         if not command:
             return ["Syntax error"]
