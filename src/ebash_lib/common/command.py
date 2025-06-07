@@ -69,6 +69,8 @@ def echo(args: list[str], ctx: Context):
 @CommandRunner.register
 def cat(args: list[str], ctx: Context):
     if len(args) < 1:
+        if ctx.stdout:  # piped into cat
+            return ctx
         return ctx.with_error(2, "Usage: cat <file>")
     else:
         try:
@@ -81,18 +83,23 @@ def cat(args: list[str], ctx: Context):
 @CommandRunner.register
 def wc(args: list[str], ctx: Context):
     if len(args) < 1:
-        return ctx.with_error(2, "Usage: wc <file>")
+        filename = "(stdin)"
+        if ctx.stdout:
+            content = "\n".join(x.strip("\n") for x in ctx.stdout)
+        else:
+            return ctx.with_error(2, "Usage: wc <file>")
     else:
         try:
+            filename = args[0]
             with open(args[0], "r") as file:
                 content = file.read()
-                lines = content.split("\n")
-                words = content.split()
-                chars = len(content)
-                output = f"{len(lines)}\t{len(words)}\t{chars}\t{args[0]}"
-                return ctx.with_stdout([output])
         except FileNotFoundError:
             return ctx.with_error(1, f"Error: File '{args[0]}' not found.")
+    lines = content.split("\n")
+    words = content.split()
+    chars = len(content)
+    output = f"{len(lines)}\t{len(words)}\t{chars}\t{filename}"
+    return ctx.with_stdout([output])
 
 
 @CommandRunner.register
