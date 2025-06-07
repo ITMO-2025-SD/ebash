@@ -16,7 +16,7 @@ def test_env_vars():
     assert loop.run_lexer("$aaa") == ["bbb"]
     assert loop.run_lexer("$aaabc") == [""]
     assert loop.run_lexer("1+$aaa=b") == ["1+bbb=b"]
-    assert loop.run_lexer("'$aaa'") == ["$aaa"]
+    assert loop.run_lexer("'$aaa' '$ccc'") == ["$aaa", "$ccc"]
     assert loop.run_lexer('"$aaa"') == ["bbb"]
 
 
@@ -29,3 +29,10 @@ def test_backslash():
     assert loop.run_lexer("a\\\\b") == ["a\\b"]
     assert loop.run_lexer("'a\\''") == ["a'"]  # different from Bash behavior, but who cares
     assert loop.run_lexer('"a\\""') == ['a"']
+
+
+def test_composite_quotes():
+    loop = BashLoop(BashParser, {}, "")
+
+    assert loop.run_lexer('"README".md') == ["README.md"]
+    assert loop.run_lexer('"start here"and"end here"') == ["start hereandend here"]

@@ -23,6 +23,7 @@ class BashLoop:
 
     def run_lexer(self, line: str) -> list[str] | None:
         current_quote: Literal[None, '"', "'"] = None
+        last_quote: Literal[None, '"', "'"] = None
         current_word: list[str] = []
         current_tokens: list[str] = []
         is_backslash: bool = False
@@ -35,23 +36,26 @@ class BashLoop:
                 is_backslash = True
             elif current_quote is None and char in ("'", '"'):
                 current_quote = char
-            elif current_quote == char or (current_quote is None and char in "\n\t "):
-                if current_word:
-                    current_tokens.append(self.load_environ(current_quote, "".join(current_word)))
-                current_word = []
+            elif current_quote == char:
+                last_quote = current_quote
                 current_quote = None
+            elif current_quote is None and char in "\n\t ":
+                if current_word:
+                    current_tokens.append(self.load_environ(last_quote, "".join(current_word)))
+                current_word = []
+                current_quote = last_quote = None
             else:
                 current_word.append(char)
 
         if current_quote is not None or is_backslash:
             return None
         if current_word:
-            current_tokens.append(self.load_environ(current_quote, "".join(current_word)))
+            current_tokens.append(self.load_environ(last_quote, "".join(current_word)))
 
         return current_tokens
 
     def run_once(self, line: str) -> list[str]:
-        if line == '\x18': # Введен Ctrl+X
+        if line == "\x18":  # Введен Ctrl+X
             tokens = self.run_lexer("exit")
         else:
             tokens = self.run_lexer(line)
@@ -73,4 +77,5 @@ class BashLoop:
 
     def run(self):
         while True:
-            print("\n".join(self.run_once(input(f"[{self.cwd}]> "))))
+            print(f"[{self.cwd}]> ", end="")
+            print("\n".join(self.run_once(input())))
