@@ -36,11 +36,13 @@ class CommandRunner(MetaCommand):
             return self.registered_commands[command](self.args[1:], ctx)
         else:
             path_content = ctx.environ["PATH"].split(":")
+            if command.startswith(".") or "/" in command:
+                path_content.append(".")
             binary_name = None
             for path in path_content:
                 fileName = Path(f"{path}/{command}")
                 if fileName.is_file():
-                    binary_name = fileName
+                    binary_name = fileName.absolute()
                     break
 
             if binary_name:
