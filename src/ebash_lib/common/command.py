@@ -163,7 +163,7 @@ def grep(args: list[str], ctx: Context):
             return ctx.with_error(2, "Missing file(s)")
 
     # Компиляция регулярного выражения
-    regex = re.escape(pattern)
+    regex = pattern  # re.escape(pattern)
     if word:
         regex = rf"\b{regex}\b"
     flags = re.IGNORECASE if ignore_case else 0
